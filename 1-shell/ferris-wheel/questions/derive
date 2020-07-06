@@ -1,0 +1,1 @@
+derive Copy, Debug and Clone traits for Duration
