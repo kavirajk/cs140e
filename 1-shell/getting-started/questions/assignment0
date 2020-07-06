@@ -1,0 +1,5 @@
+GPIO_FSEL1.write_volatile(0b001 << 21);
+
+GPIO_SET0.write_volatile(1 << 27);
+
+GPIO_CLR0.write_volatile(1 << 27);
