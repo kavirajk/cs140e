@@ -1,0 +1,3 @@
+make x as mutable ref to 10.
+
+NOTE: Didn't know we take ref to integer literal
