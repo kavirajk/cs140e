@@ -1,0 +1,1 @@
+Restrict 'T' on impl. return std::io::Result instead.

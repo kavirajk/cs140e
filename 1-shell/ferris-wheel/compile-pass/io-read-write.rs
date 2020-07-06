@@ -2,13 +2,13 @@
 use std::io;
 
 struct ReadWrapper<T: io::Read> {
-    inner: T
+    inner: T,
 }
 
-impl io::Read for ReadWrapper<T> {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+impl<T: io::Read> io::Read for ReadWrapper<T> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.inner.read(buf)
     }
 }
 
-fn main() { }
+fn main() {}
