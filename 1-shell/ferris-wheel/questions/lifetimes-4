@@ -1,0 +1,1 @@
+define lifetimes 'a', 'b' and 'T' explicit on struct and impl defintions.
