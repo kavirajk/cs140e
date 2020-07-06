@@ -1,0 +1,1 @@
+Accept "'a" lifetime argument explicitly. Fix it same on "impl" and "fn"
