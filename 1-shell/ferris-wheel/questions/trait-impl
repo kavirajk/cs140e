@@ -1,0 +1,3 @@
+Implement PartialEq traits for Duration.
+
+Trick is to convert all different enum types to same unit for comparing!.
