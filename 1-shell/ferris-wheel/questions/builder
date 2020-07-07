@@ -1,0 +1,3 @@
+Impl correspoinding methods.
+Trick is to make `string` method accept both '&str' and `String` -> Done via AsRef<str>
+Builder pattern for `string` and `number` method.

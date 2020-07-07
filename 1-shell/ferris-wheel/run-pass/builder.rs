@@ -1,8 +1,38 @@
 // FIXME: Make me pass! Diff budget: 30 lines.
 
+#[derive(Default)]
 struct Builder {
     string: Option<String>,
     number: Option<usize>,
+}
+
+impl Builder {
+    fn to_string(self) -> String {
+        let mut v = Vec::new();
+
+        if let Some(s) = self.string {
+            v.push(s);
+        }
+        if let Some(n) = self.number {
+            v.push(format!("{}", n));
+        }
+
+        v.join(" ")
+    }
+
+    fn string<T: AsRef<str>>(&self, s: T) -> Self {
+        Builder {
+            string: Some(s.as_ref().clone().to_owned()),
+            number: self.number,
+        }
+    }
+
+    fn number(&self, n: usize) -> Self {
+        Builder {
+            string: self.string.clone(),
+            number: Some(n),
+        }
+    }
 }
 
 // Do not modify this function.
@@ -31,9 +61,7 @@ fn main() {
 
     assert_eq!(b, "bye now! 200");
 
-    let c = Builder::default()
-        .string("heap!".to_owned())
-        .to_string();
+    let c = Builder::default().string("heap!".to_owned()).to_string();
 
     assert_eq!(c, "heap!");
 }
