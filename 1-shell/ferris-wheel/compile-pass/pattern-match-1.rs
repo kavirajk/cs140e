@@ -3,14 +3,14 @@
 // Do not change this definition.
 enum MyEnum {
     A(String),
-    B(String)
+    B(String),
 }
 
 fn matcher(val: &MyEnum) -> &str {
-    match *val {
+    match val {
         MyEnum::A(string) => string.as_str(),
-        MyEnum::B(string) => string.as_str()
+        MyEnum::B(string) => string.as_str(),
     }
 }
 
-fn main() { }
+fn main() {}
