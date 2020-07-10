@@ -1,10 +1,9 @@
-#![cfg_attr(test, feature(inclusive_range_syntax))]
 #![no_std]
 
 #[cfg(test)]
 mod tests;
 
-use core::slice::Iter;
+use core::ops::{Deref, DerefMut};
 
 /// A contiguous array type backed by a slice.
 ///
@@ -49,11 +48,10 @@ impl<'a, T: 'a> StackVec<'a, T> {
     /// greater than the vector's current length, this has no effect. Note that
     /// this method has no effect on the capacity of the vector.
     pub fn truncate(&mut self, len: usize) {
-        // if self.len <= len {
-        //     return;
-        // }
-        // self.len = len;
-        unimplemented!()
+        if self.len <= len {
+            return;
+        }
+        self.len = len;
     }
 
     /// Extracts a slice containing the entire vector, consuming `self`.
@@ -61,19 +59,19 @@ impl<'a, T: 'a> StackVec<'a, T> {
     /// Note that the returned slice's length will be the length of this vector,
     /// _not_ the length of the original backing storage.
     pub fn into_slice(self) -> &'a mut [T] {
-        unimplemented!()
-        // &mut self.storage[..self.len]
+        // unimplemented!()
+        &mut self.storage[..self.len]
     }
 
     /// Extracts a slice containing the entire vector.
     pub fn as_slice(&self) -> &[T] {
-        unimplemented!()
-        // &self.storage[..self.len]
+        // unimplemented!()
+        &self.storage[..self.len]
     }
 
     /// Extracts a mutable slice of the entire vector.
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        unimplemented!()
+        &mut self.storage[0..self.len]
     }
 
     /// Returns the number of elements in the vector, also referred to as its
@@ -105,7 +103,6 @@ impl<'a, T: 'a> StackVec<'a, T> {
         self.storage[self.len] = value;
         self.len += 1;
         Ok(())
-        // unimplemented!()
     }
 }
 
@@ -116,61 +113,64 @@ impl<'a, T: Clone + 'a> StackVec<'a, T> {
         if self.is_empty() {
             return None;
         }
-        let x = self.storage[self.len].clone();
+        let x = self.storage[self.len - 1].clone();
         self.len -= 1;
         Some(x)
-        // unimplemented!()
     }
 }
 
-impl<'a, T: Clone + 'a> StackVec<'a, T> {
-    pub fn iter(&self) -> Iter<'_, T> {
-        Iter {
-            inner: &self.storage[0..self.len],
-            next: 0,
-        }
+// FIXME: Implement `Deref`, `DerefMut`, and `IntoIterator` for `StackVec`.
+impl<'a, T: 'a> Deref for StackVec<'a, T> {
+    type Target = [T];
+    fn deref(&self) -> &Self::Target {
+        &self.storage[..self.len]
     }
 }
 
-impl<'a, T: Clone + 'a> IntoIterator for StackVec<'a, T> {
-    type Item = T;
+impl<'a, T: 'a> DerefMut for StackVec<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.storage[..self.len]
+    }
+}
+
+impl<'a, T: 'a> IntoIterator for StackVec<'a, T> {
+    type Item = &'a T;
     type IntoIter = Iter<'a, T>;
     fn into_iter(self) -> Self::IntoIter {
         Iter {
-            inner: &self.storage[0..self.len],
-            next: 0,
-        }
-    }
-}
-
-impl<'a, T: Clone + 'a> IntoIterator for &'a StackVec<'a, T> {
-    type Item = T;
-    type IntoIter = Iter<'a, T>;
-    fn into_iter(self) -> Self::IntoIter {
-        Iter {
-            inner: &self.storage[0..self.len],
-            next: 0,
+            storage: self.storage,
+            len: 0,
         }
     }
 }
 
 pub struct Iter<'a, T: 'a> {
-    inner: &'a [T],
-    next: usize,
+    storage: &'a [T],
+    len: usize,
 }
 
-impl<'a, T: Clone + 'a> Iterator for Iter<'a, T> {
-    type Item = T;
+impl<'a, T: 'a> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
     fn next(&mut self) -> Option<Self::Item> {
-        if self.inner.len() >= self.next {
-            None
+        if self.len >= self.storage.len() {
+            return None;
         } else {
-            let x = self.inner[self.next].clone();
-            self.next += 1;
+            let x = &self.storage[self.len];
+            self.len += 1;
             Some(x)
         }
     }
 }
 
-// FIXME: Implement `Deref`, `DerefMut`, and `IntoIterator` for `StackVec`.
 // FIXME: Implement IntoIterator` for `&StackVec`.
+impl<'a, T: 'a> IntoIterator for &'a StackVec<'a, T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        Iter {
+            storage: self.storage,
+            len: 0,
+        }
+    }
+}
