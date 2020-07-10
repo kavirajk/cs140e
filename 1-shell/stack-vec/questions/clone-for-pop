@@ -1,0 +1,3 @@
+`Clone` is there to return the owned copy of `T` during `pop()` not the reference behind the actual storage `&mut [T]`.
+
+You cannot copy the types, unless its `Copy` type.

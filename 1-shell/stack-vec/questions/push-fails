@@ -1,0 +1,3 @@
+`Vec` from std panics in case if it cannot push(may be cannot allocate memory or memory overflow) because it manages memory dynamically.
+
+`Stackvec` returns `Result` as we know the exact upper limit of the storage available. So its more obvious when to return Err( when backed storage is full)

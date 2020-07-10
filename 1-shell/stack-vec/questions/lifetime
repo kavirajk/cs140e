@@ -1,0 +1,3 @@
+'T' denotes item present inside the storage `&mut [T]'. So both `T` and `&mut [T]` should behind same reference lifetime to keep memory safety in place.
+
+And this "same lifetime" is what 'a denotes. Hence both `&mut [T]` and `&T` must be behind lifetime 'a.

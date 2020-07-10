@@ -1,0 +1,9 @@
+`Deref` is used for indexing the stackvec.
+
+```
+v[0] -> *v.index(i)
+```
+
+Same with `DerefMut` except retured value is &mut.
+
+So all the tests *index* uses Deref and DerefMut.
