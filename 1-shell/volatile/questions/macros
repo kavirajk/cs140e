@@ -1,0 +1,4 @@
+macros implement traits for Concrete types.
+readable! - impl Readable traits
+writable! - impl Writable traits
+readable_writable! - impl both Readable and Writable traits

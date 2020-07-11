@@ -1,0 +1,3 @@
+coz, all the `new` function cast raw pointer (either *const T or *mut T) to 'static lifetime, which is unsafe operation.
+
+whereas read or write doesn't accept `raw` pointers in the arguments.

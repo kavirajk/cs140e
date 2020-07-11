@@ -1,0 +1,3 @@
+UniqueVolatile uses `Unique` pointer underlying, which implements Sync + Send traits (safe to send acrros multiple threads) on top of {Read,Write}Volatile traits
+
+UniqueVolatile allows no pointer aliasing. Meaning only one path to underlying pointer.

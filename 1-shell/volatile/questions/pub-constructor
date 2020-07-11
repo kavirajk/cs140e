@@ -1,0 +1,1 @@
+providing public constructor is safe and good abstraction. e.g: one can initialize the private fields. also those fields doesn't have to be exposed. e.g: enabling to directly access ptr.0 is unsafe.

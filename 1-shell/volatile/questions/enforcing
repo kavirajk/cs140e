@@ -1,0 +1,1 @@
+They enforce read and write, just by exposing only read and write methods on top of raw pointers
