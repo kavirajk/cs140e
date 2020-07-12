@@ -259,14 +259,14 @@ impl<T: io::Read + io::Write> Xmodem<T> {
         // 4. read 128 bytes (actual packet)
         // 5. read checksum
 
+        if buf.len() < 128 {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "expected"));
+        }
+
         if !self.started {
             self.write_byte(NAK)?;
             (self.progress)(Progress::Started);
             self.started = true;
-        }
-
-        if buf.len() < 128 {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "expected"));
         }
 
         let b = self.read_byte(true)?;
@@ -276,6 +276,7 @@ impl<T: io::Read + io::Write> Xmodem<T> {
                 self.write_byte(NAK)?;
                 self.expect_byte(EOT, "expected EOT")?;
                 self.write_byte(ACK)?;
+                self.started = false;
                 Ok(0)
             }
             SOH => {
@@ -291,7 +292,7 @@ impl<T: io::Read + io::Write> Xmodem<T> {
                 )?;
 
                 // actual payload
-                let n = self.inner.read_max(&mut buf[0..128])?;
+                let n = self.inner.read_max(&mut buf[..])?;
                 if n < 128 {
                     return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "expected"));
                 }
@@ -299,10 +300,10 @@ impl<T: io::Read + io::Write> Xmodem<T> {
                 // checksum
                 let mut csum: u8 = 0;
                 for i in 0..n {
-                    csum.wrapping_add(buf[i]);
+                    csum = csum.wrapping_add(buf[i]);
                 }
 
-                let b = self.read_byte(true)?;
+                let b = self.read_byte(false)?;
                 if b != csum {
                     self.write_byte(NAK)?;
                     return Err(io::Error::new(io::ErrorKind::Interrupted, "expected"));
@@ -313,7 +314,7 @@ impl<T: io::Read + io::Write> Xmodem<T> {
 
                 (self.progress)(Progress::Packet(self.packet));
 
-                self.packet.wrapping_add(1);
+                self.packet = self.packet.wrapping_add(1);
 
                 self.flush()?;
 
@@ -366,27 +367,26 @@ impl<T: io::Read + io::Write> Xmodem<T> {
         //   b. expect NAK
         //   c. send EOT
         //   d. expect ACK
-        if buf.len() == 0 {
-            // TODO(kavi): why we should expect NAK first, before initiating EOT?
-            self.expect_byte(NAK, "expected NAK")?;
-            self.write_byte(EOT)?;
-            self.expect_byte(NAK, "expected NAK")?;
-            self.write_byte(EOT)?;
-            self.expect_byte(ACK, "expected NAK")?;
-            self.flush()?;
-            return Ok(0);
-        }
 
-        if buf.len() < 128 {
+        if buf.len() < 128 && buf.len() != 0 {
             return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "expected"));
         }
 
-        // first byte
         if !self.started {
             (self.progress)(Progress::Waiting);
             self.expect_byte(NAK, "expected NAK")?;
             (self.progress)(Progress::Started);
             self.started = true;
+        }
+
+        if buf.len() == 0 {
+            self.write_byte(EOT)?;
+            self.expect_byte(NAK, "expected NAK")?;
+            self.write_byte(EOT)?;
+            self.expect_byte(ACK, "expected NAK")?;
+            self.flush()?;
+            self.started = false;
+            return Ok(0);
         }
 
         // now send block
@@ -397,16 +397,16 @@ impl<T: io::Read + io::Write> Xmodem<T> {
 
         let mut csum: u8 = 0;
         for i in 0..n {
-            csum.wrapping_add(buf[i]);
+            csum = csum.wrapping_add(buf[i]);
         }
 
-        self.write_byte(csum as u8)?;
+        self.write_byte(csum)?;
         let b = self.read_byte(true)?;
         match b {
             NAK => return Err(io::Error::new(io::ErrorKind::Interrupted, "expected")),
             ACK => {
                 (self.progress)(Progress::Packet(self.packet));
-                self.packet.wrapping_add(1);
+                self.packet = self.packet.wrapping_add(1);
                 self.flush()?;
                 return Ok(n);
             }
