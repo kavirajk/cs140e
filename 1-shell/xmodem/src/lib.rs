@@ -270,54 +270,57 @@ impl<T: io::Read + io::Write> Xmodem<T> {
         }
 
         let b = self.read_byte(true)?;
-        if b != EOT || b != SOH {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "expected"));
+        match b {
+            EOT => {
+                // no more data. stop the transfer mutually!.
+                self.write_byte(NAK)?;
+                self.expect_byte(EOT, "expected EOT")?;
+                self.write_byte(ACK)?;
+                Ok(0)
+            }
+            SOH => {
+                // try to receive a single packet.
+
+                // packet number
+                self.expect_byte_or_cancel(self.packet, "expected packet number")?;
+
+                // 1's complement.
+                self.expect_byte_or_cancel(
+                    !self.packet,
+                    "expected 1's complement of packet number",
+                )?;
+
+                // actual payload
+                let n = self.inner.read_max(&mut buf[0..128])?;
+                if n < 128 {
+                    return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "expected"));
+                }
+
+                // checksum
+                let mut csum: u8 = 0;
+                for i in 0..n {
+                    csum.wrapping_add(buf[i]);
+                }
+
+                let b = self.read_byte(true)?;
+                if b != csum {
+                    self.write_byte(NAK)?;
+                    return Err(io::Error::new(io::ErrorKind::Interrupted, "expected"));
+                }
+
+                // send ACK
+                self.write_byte(ACK)?;
+
+                (self.progress)(Progress::Packet(self.packet));
+
+                self.packet.wrapping_add(1);
+
+                self.flush()?;
+
+                Ok(128)
+            }
+            _ => Err(io::Error::new(io::ErrorKind::InvalidData, "expected")),
         }
-
-        if b == EOT {
-            // graceful termination
-            self.write_byte(NAK)?;
-            self.expect_byte(EOT, "expected EOT")?;
-            self.write_byte(ACK)?;
-        }
-
-        // first byte is SOH, so transmit begin
-
-        // packet number
-        self.expect_byte_or_cancel(self.packet, "expected packet number")?;
-
-        // 1's complement of packet number
-        self.expect_byte_or_cancel(
-            255 - self.packet,
-            "expected 1's complement of packet number",
-        )?;
-
-        // actual payload
-        let n = self.inner.read_max(&mut buf[0..128])?;
-        if n < 128 {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "expected"));
-        }
-        let mut csum: u16 = 0;
-        for i in 0..128 {
-            csum += buf[i] as u16;
-            csum %= 256;
-        }
-
-        let b = self.read_byte(true)?;
-        if b as u16 != csum {
-            return Err(io::Error::new(io::ErrorKind::Interrupted, "expected"));
-        }
-
-        // valid payload is recived. now send ack
-        self.write_byte(ACK)?;
-
-        (self.progress)(Progress::Packet(self.packet));
-
-        self.packet %= self.packet + 1;
-
-        self.flush()?;
-
-        Ok(128)
     }
 
     /// Sends (uploads) a single packet to the inner stream using the XMODEM
@@ -388,15 +391,13 @@ impl<T: io::Read + io::Write> Xmodem<T> {
 
         // now send block
         self.write_byte(SOH)?;
-        println!("Am i here?");
         self.write_byte(self.packet)?;
-        self.write_byte(255 - self.packet)?;
-        self.inner.write_all(&buf)?;
+        self.write_byte(!self.packet)?;
+        let n = self.inner.write(&buf)?;
 
-        let mut csum: u16 = 0;
-        for i in 0..128 {
-            csum += buf[i] as u16;
-            csum %= 256;
+        let mut csum: u8 = 0;
+        for i in 0..n {
+            csum.wrapping_add(buf[i]);
         }
 
         self.write_byte(csum as u8)?;
@@ -405,9 +406,9 @@ impl<T: io::Read + io::Write> Xmodem<T> {
             NAK => return Err(io::Error::new(io::ErrorKind::Interrupted, "expected")),
             ACK => {
                 (self.progress)(Progress::Packet(self.packet));
-                self.packet %= self.packet + 1;
+                self.packet.wrapping_add(1);
                 self.flush()?;
-                return Ok(128);
+                return Ok(n);
             }
             _ => return Err(io::Error::new(io::ErrorKind::InvalidData, "expected")),
         }
