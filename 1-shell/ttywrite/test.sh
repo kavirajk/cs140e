@@ -33,13 +33,9 @@ PARAMS="pty,echo=0,raw,ispeed=115200,ospeed=115200,parenb=0,cs8,cstopb=0"
 socat -u ${PARAMS},link=input ${PARAMS},link=output &
 sleep 1
 
-if [[ "$(uname)" = "Darwin" ]]; then
-  stty -f input min 0 time 1
-  stty -f output min 0 time 1
-else
-  stty -F input min 0 time 1
-  stty -F output min 0 time 1
-fi
+# NOTE(kavi): for some reason -F works on mac as well. so combined both into one.
+stty -F input min 0 time 1
+stty -F output min 0 time 1
 
 for i in {1..10}; do
   echo -e "${KBLU}Running test ${i}/10.${KNRM}"
