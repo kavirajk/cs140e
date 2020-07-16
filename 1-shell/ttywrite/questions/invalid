@@ -1,0 +1,1 @@
+structopt reject the invaliddata by parsing its value via 'parse' function annotated in structopts

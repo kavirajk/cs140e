@@ -1,0 +1,3 @@
+we cannot use XMODEM yet, as the serial port (created by socat) doesn't understand the protocal yet.
+
+We need a driver for that device to understand XMODEM to successfully transmit data.
