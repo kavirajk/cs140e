@@ -13,22 +13,23 @@ pub trait Wrapper {
 /// Trait implemented by **readable** volatile wrappers.
 pub trait Readable<T> {
     /// Returns the inner pointer.
-    #[inline(always)]
+    #[inline]
     fn inner(&self) -> *const T;
 
     /// Reads and returns the value pointed to by `self`. The read is always
     /// done using volatile semantics.
-    #[inline(always)]
+    #[inline]
     fn read(&self) -> T {
         unsafe { ::core::ptr::read_volatile(self.inner()) }
     }
 
     /// Returns `true` if the value pointed to by `self` has the mask `mask`.
     /// This is equivalent to `(self.read() & mask) == mask`.
-    #[inline(always)]
+    #[inline]
     fn has_mask(&self, mask: T) -> bool
-        where T: ::core::ops::BitAnd<Output = T>,
-              T: PartialEq + Copy
+    where
+        T: ::core::ops::BitAnd<Output = T>,
+        T: PartialEq + Copy,
     {
         (self.read() & mask) == mask
     }
@@ -37,12 +38,12 @@ pub trait Readable<T> {
 /// Trait implemented by **writeable** volatile wrappers.
 pub trait Writeable<T> {
     /// Returns the inner pointer.
-    #[inline(always)]
+    #[inline]
     fn inner(&mut self) -> *mut T;
 
     /// Writes the value `val` to the inner address of `self`. The write is
     /// always done using volatile semantics.
-    #[inline(always)]
+    #[inline]
     fn write(&mut self, val: T) {
         unsafe { ::core::ptr::write_volatile(self.inner(), val) }
     }
@@ -50,8 +51,9 @@ pub trait Writeable<T> {
 
 /// Trait implemented by **readable _and_ writeable** volatile wrappers.
 pub trait ReadableWriteable<T>: Readable<T> + Writeable<T>
-    where T: ::core::ops::BitAnd<Output = T>,
-          T: ::core::ops::BitOr<Output = T>
+where
+    T: ::core::ops::BitAnd<Output = T>,
+    T: ::core::ops::BitOr<Output = T>,
 {
     /// Applies the mask `mask` using `&` to the value referred to by `self`.
     /// This is equivalent to `self.write(self.read() & mask)`.
@@ -67,4 +69,3 @@ pub trait ReadableWriteable<T>: Readable<T> + Writeable<T>
         self.write(init_val | mask);
     }
 }
-
